@@ -1,55 +1,64 @@
-.开发模式：仅能编译JS中的ES Module语法
-.生产模式：能编译JS中的ES Module语法，还能压缩JS代码
+优化：
+1.提升开发体验
+
+source map(源代码映射) 构建后代码和源代码映射，方便出错后映射到源代码
+source-map:即关心行又关心列（适用于生产环境）
+cheap-source-map:只关心行
+
+2.提升打包速度
+
+2.1  HotModuleReplacementPlugin（HMR）
+开发环境开启
+ devServer:{
+      hot:false,  //开启HMR
+    },
+
+//js的热模块替换，如果后期使用react库不用写，因为库里面已设置
+if (module.hot) {
+    module.hot.accept('./js/count', function() {
+      // 对更新过的 library 模块做些事情...
+
+    });
+  }
+
+2.2 Rule.oneOf 当规则匹配时，只使用第一个匹配规则,不再判断后面的规则
+
+2.3 exclude  排除node_modules里面的文件，处理剩下的文件，只针对js文件处理
+
+2.4 开启缓存模式cache,让第二次打包的速度快一些
+
+2.5 terser-webpack-plugin 开启多进程打包以及压缩js
+
+3.减少打包体积
+
+3.1.Tree Shaking （默认webpack已经开启） 移除js中没有用到的代码，不打包到输出文件中
+3.2.'@babel/plugin-transform-runtime' 减少babel打包的体积，避免重复引入。因为babel会在引入的文件中加一些辅助代码，这样就会出现重复的引入
+3.3.ImageMinimizerWebpackPlugin（压缩图片），如果图片是放到本地的则需要，放到CDN上的不需要
 
 
-webpack-cli:webpack的指令，有了webpack-cli就可以运行webpack的指令了
+4.优化代码运行性能
 
-#### npm:侧重于安装
+4.1代码分割（code split）
+打包的时候会把所有的代码打包都一个文件中，如果加载首页会默认把所有的js都加载，这样加载体积过大，就会加载慢性能不好
 
-#### npx:侧重于执行命令的，执行某个模块命令，
+代码分割：（按需加载，并行加载）
+1.分割文件：将打包生成的文件进行分割，生成多个js文件
+2.按需加载：需要哪个文件就加载哪个文件
 
-如果安装了包，NPX将搜索包二进制文件（本地或全局），然后运行包。
-如果之前未安装该软件包，NPX将不会在您的系统中安装该软件包；相反，它将创建一个临时缓存来保存包二进制文件。一旦执行结束，NPX将从系统中删除已安装的缓存二进制文件。
-将node_modules中的.bin临时添加为环境变量，这样就可以访问这个环境变量里的应用程序
+预获取/预加载模块(prefetch/preload module)
 
+prefetch(预获取)：加载所有页面
+preload(预加载)：只加载当前页面
 
-npx webpack :会读取目录下的webpack.config.js的配置，按照里面的配置执行打包
-
-npx webpack ./src/main.js :会按照./src/main.js去打包，不会读取配置文件
-
-
-loader:执行顺序从右向左，从下到上
-
-style-loader ：将js中的css通过创建style标签添加到html中
-css-loader ：将css资源编译成commonjs的模块到js中
-less-loader: 将less编译成css资源
-
-##处理静态资源
-
-asset会将资源转换成base64位，asset/resource不会转换而是直接输出
-
-将图片打包到指定文件下通过一下两种方式：
-assetModuleFilename
-generator.filename
-
-####清除缓存的方式
-
-webpack4:clean-webpack-plugin
-webpack5:output中加clean:true
+##缓存
+[contenthash] 将根据资源内容创建出唯一 hash，如果内容改变当前文件的hash值就会变，否则不变
 
 
-##yarn config set ignore-engines true   解决ESlint依赖node低版本问题
+ moduleIds: 'deterministic',  //解决文件内容不变，重复打包的问题
 
 
-##babel编译工具，将高级的js语法编译成低级的使可以在浏览器中适配
 
-babel-loader @babel/core @babel/preset-env
-
-##自动化 webpack-dev-server
-
-会监听内容的修改，如果有更改就会自动打包更新内容，不需要重新手动打包，
-开发服务器不会输出资源，在内存中编译打包的
-
-## Css兼容性处理
-
-postcss-loader postcss  postcss-preset-env
+ #处理ES6以上的语法
+ core-js 
+ 
+ 通过设置babel.config.js里面useBuiltIns实现自动按需引入，这样可以减小包的大小，只引入需要的语法，而不是全部引入

@@ -4,6 +4,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const WebpackDevServer = require('webpack-dev-server');
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
 //用来获取处理样式的loader
 function getStyleLoader(pre){
 return [
@@ -28,22 +29,27 @@ module.exports = {
     //输出
     output:{
         //__dirname node的变量，代表当前文件的文件夹目录
-        path:path.resolve(__dirname,'dist'),  //绝对路径
-        filename:'main.js',
+        path:path.resolve(__dirname,'../dist'),  //绝对路径
+        filename:'js/[name].[contenthash:10].js',    //入口文件打包输出文件名
+        chunkFilename:'js/[name].[contenthash:10].chunk.js',
         clean:true,  //在打包前将path的目录清空
-       // assetModuleFilename: 'images/[hash][ext][query]'
     },
    //加载器
     module:{
         rules:[
             {
-                test: /\.css$/,
-                use:getStyleLoader()
+                oneOf:[
+                    {
+                        test: /\.css$/,
+                        use:getStyleLoader()
+                    },
+                    {
+                        test: /\.less$/,
+                        use: getStyleLoader('less-loader')
+                    },
+                ]
             },
-            {
-                test: /\.less$/,
-                use: getStyleLoader('less-loader')
-            },
+           
             {
                 test: /\.(png|svg|jpg|gif)$/,
                 type: 'asset',
@@ -71,7 +77,9 @@ module.exports = {
                 use: {
                   loader: 'babel-loader',
                   options: {
-                    presets: ['@babel/preset-env']
+                    cacheDirectory:true,  //开启缓存
+                    cacheCompression:false,  //关闭缓存文件的压缩
+                    plugins: ['@babel/plugin-transform-runtime'],   //减少babel打包的体积，避免重复引入
                   }
                 }
             }
@@ -80,23 +88,39 @@ module.exports = {
     //插件
     plugins:[
         //将css提取到单独的问文件
-        new MiniCssExtractPlugin(),
+        new MiniCssExtractPlugin({
+            filename:"css/[name].[contenthash:10].css",
+            chunkFilename:'css/[name].[contenthash:10].chunk.css'
+        }),
         new ESLintPlugin({
             //检测哪些文件
-            context:path.resolve(__dirname,'../src')
+            context:path.resolve(__dirname,'../src'),
+            cache:true,  //开启缓存
+            cacheLocation:path.resolve(__dirname,'../node_modules/.cache/eslintcache'),  //eslint缓存文件
         }),
         new HtmlWebpackPlugin({
             //模版：以public文件下的index.html文件创建新的html文件
             //新的文件特点：1,结构和原来的一样，2.自动引入打包输出的资源
             template:path.resolve(__dirname,'../src/public/index.html')
         }),
+
       
     ],
     optimization: {
+        moduleIds: 'deterministic',  //解决文件内容不变，重复打包的问题
         minimizer: [
             //优化和压缩 CSS只在生产模式下生效
-          new CssMinimizerPlugin(),
+            new CssMinimizerPlugin(),
+            //开启多进程以及压缩js
+            new TerserPlugin({
+                parallel:true,
+            })
         ],
+        splitChunks:{
+            chunks: 'all',  //对所有模块进行分割
+            //修改配置
+            cacheGroups: {},
+        },
     },
     //开发服务器:不会输出资源，在内存中编译打包的
     devServer:{
@@ -104,7 +128,7 @@ module.exports = {
       port:'3030',
       open:true
     },
-
+    devtool:'source-map',
    // mode 模式 ：development,production
    mode:"production"
 }

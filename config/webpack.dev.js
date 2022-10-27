@@ -10,7 +10,7 @@ module.exports = {
     //输出
     output:{
         //__dirname node的变量，代表当前文件的文件夹目录
-        path:path.resolve(__dirname,'dist'),  //绝对路径
+        path:path.resolve(__dirname,'../dist'),  //绝对路径
         filename:'main.js',
         clean:true,  //在打包前将path的目录清空
        // assetModuleFilename: 'images/[hash][ext][query]'
@@ -85,7 +85,8 @@ module.exports = {
     devServer:{
       host:"localhost",
       port:'3030',
-      open:true
+      open:true,
+      hot:false,  //开启HMR
     },
 
    // mode 模式 ：development,production

@@ -3,6 +3,7 @@ module.exports={
     extends:["eslint:recommended"],
     "env": {
         "browser": true,   //启用浏览器中的全局变量
+        "es6": true,
         "node": true     //启用node中的全局变量
     },
     //解释选项
