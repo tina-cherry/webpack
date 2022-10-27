@@ -1,0 +1,55 @@
+.开发模式：仅能编译JS中的ES Module语法
+.生产模式：能编译JS中的ES Module语法，还能压缩JS代码
+
+
+webpack-cli:webpack的指令，有了webpack-cli就可以运行webpack的指令了
+
+#### npm:侧重于安装
+
+#### npx:侧重于执行命令的，执行某个模块命令，
+
+如果安装了包，NPX将搜索包二进制文件（本地或全局），然后运行包。
+如果之前未安装该软件包，NPX将不会在您的系统中安装该软件包；相反，它将创建一个临时缓存来保存包二进制文件。一旦执行结束，NPX将从系统中删除已安装的缓存二进制文件。
+将node_modules中的.bin临时添加为环境变量，这样就可以访问这个环境变量里的应用程序
+
+
+npx webpack :会读取目录下的webpack.config.js的配置，按照里面的配置执行打包
+
+npx webpack ./src/main.js :会按照./src/main.js去打包，不会读取配置文件
+
+
+loader:执行顺序从右向左，从下到上
+
+style-loader ：将js中的css通过创建style标签添加到html中
+css-loader ：将css资源编译成commonjs的模块到js中
+less-loader: 将less编译成css资源
+
+##处理静态资源
+
+asset会将资源转换成base64位，asset/resource不会转换而是直接输出
+
+将图片打包到指定文件下通过一下两种方式：
+assetModuleFilename
+generator.filename
+
+####清除缓存的方式
+
+webpack4:clean-webpack-plugin
+webpack5:output中加clean:true
+
+
+##yarn config set ignore-engines true   解决ESlint依赖node低版本问题
+
+
+##babel编译工具，将高级的js语法编译成低级的使可以在浏览器中适配
+
+babel-loader @babel/core @babel/preset-env
+
+##自动化 webpack-dev-server
+
+会监听内容的修改，如果有更改就会自动打包更新内容，不需要重新手动打包，
+开发服务器不会输出资源，在内存中编译打包的
+
+## Css兼容性处理
+
+postcss-loader postcss  postcss-preset-env
