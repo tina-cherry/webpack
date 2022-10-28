@@ -1,0 +1,1 @@
+{"version":3,"file":"home.css","mappings":";;;AAAA;EACI;AACJ","sources":["webpack://cherry-webpack/./src/pages/home/index.less"],"sourcesContent":[".box{\n    color:red\n}\n@primary-color: #1DA57A;@link-color: #1DA57A;@border-radius-base: 2px;"],"names":[],"sourceRoot":""}

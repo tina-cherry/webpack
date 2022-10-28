@@ -1,94 +1,157 @@
-const path = require('path')
-const ESLintPlugin = require('eslint-webpack-plugin')
+let path = require("path")
+const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const WebpackDevServer = require('webpack-dev-server');
-const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-module.exports = {
-    //入口文件
+const ESLintPlugin = require('eslint-webpack-plugin')
+const TerserPlugin = require("terser-webpack-plugin");
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
+const getStyleFn=(pre)=>{
+    return [
+        MiniCssExtractPlugin.loader,
+        'css-loader',
+        {
+            loader: "postcss-loader",   //处理样式的兼容性问题
+            options: {
+              postcssOptions: {
+                plugins: [
+                    "postcss-preset-env",
+                ],
+              },
+            },
+          },
+        pre && {
+            loader :pre,
+            options:pre === 'less-loader' ?
+            {
+                lessOptions: { // 如果使用less-loader@5，请移除 lessOptions 这一级直接配置选项。
+                    modifyVars: {
+                      'primary-color': '#1DA57A',
+                       'link-color': '#1DA57A',
+                      'border-radius-base': '2px',
+                    },
+                    javascriptEnabled: true,
+                },
+            }
+            :{}
+        }
+    ].filter(Boolean) 
+}
+module.exports={
     entry:'./src/main.js',
-    //输出
     output:{
-        //__dirname node的变量，代表当前文件的文件夹目录
-        path:path.resolve(__dirname,'../dist'),  //绝对路径
-        filename:'main.js',
-        clean:true,  //在打包前将path的目录清空
-       // assetModuleFilename: 'images/[hash][ext][query]'
+        filename:'js/[name].bundle.js',
+        path:path.resolve(__dirname,'../dist'),
+        assetModuleFilename:'media/[hash:10][ext][query]',  //图片等资源
+        clean:true,
     },
-   //加载器
-    module:{
+    module: {
         rules:[
             {
-                test: /\.css$/,
-                use:[MiniCssExtractPlugin.loader,'css-loader']   //提取css成单独的文件，把style-loader改为MiniCssExtractPlugin.loader
-            },
-            {
-                test: /\.less$/,
-                use: [MiniCssExtractPlugin.loader,'css-loader',"less-loader"]
-            },
-            {
-                test: /\.(png|svg|jpg|gif)$/,
-                type: 'asset',
-                parser:{
-                    dataUrlCondition:{
-                        // 小于1kb会转换成base64,优点减少请求数量，缺点：图片体积会大一点
-                        maxSize: 1 * 1024 // 1kb
+                oneOf: [
+                    {
+                      test: /\.css$/,
+                      use: getStyleFn()
+                    },
+                    {
+                      test: /\.less$/,
+                      use: getStyleFn('less-loader')
                     }
-                },
-                generator:{
-                    //hash:10 取值前10
-                    filename: 'images/[hash:10][ext][query]'
+                ]
+            },
+            {
+               test: /\.(png|jpg|gif)$/i,
+               type: 'asset',
+               parser: {
+                dataUrlCondition: {
+                  maxSize: 10 * 1024 // 小于10kb的图片会被base64处理
                 }
+              },
             },
             {
                 test: /\.(woff|woff2|eot|ttf|otf)$/,
-                type:'asset/resource',
-                generator:{
-                    filename: 'media/[hash:10][ext][query]'
-                }
+                type: 'asset/resource',
             },
             {
-                test: /\.m?js$/,
+                test: /\.(jsx|js)$/,
                 exclude: /(node_modules)/,
                 use: {
                   loader: 'babel-loader',
                   options: {
-                    presets: ['@babel/preset-env']
-                  }
-                }
+                    plugins: ['react-refresh/babel'],
+                    },
+                },
+               
             }
-
         ]
+        
+
     },
-    //插件
     plugins:[
+        new HtmlWebpackPlugin({
+            template:path.resolve(__dirname,'../src/public/index.html'),
+        }),
+        new MiniCssExtractPlugin({
+            filename: "css/[name].css",
+            chunkFilename: "css/[name].chunk.css",
+        }),  //拆分css为单独文件
         new ESLintPlugin({
             //检测哪些文件
-            context:path.resolve(__dirname,'../src')
+            context:path.resolve(__dirname,'../src'),
+            cache:true,  //开启缓存
+            cacheLocation:path.resolve(__dirname,'../node_modules/.cache/eslintcache'),  //eslint缓存文件
         }),
-        new HtmlWebpackPlugin({
-            //模版：以public文件下的index.html文件创建新的html文件
-            //新的文件特点：1,结构和原来的一样，2.自动引入打包输出的资源
-            template:path.resolve(__dirname,'../src/public/index.html')
-        }),
-        //将css提取到单独的问文件
-        new MiniCssExtractPlugin()
+        new ReactRefreshWebpackPlugin(),  //react的热更新
+          // 将public下面的资源复制到dist目录去（除了index.html）
+        new CopyPlugin({
+            patterns: [
+            {
+                from: path.resolve(__dirname, "../src/public"),
+                to: path.resolve(__dirname, "../dist"),
+                toType: "dir",
+                noErrorOnMissing: true, // 不生成错误
+                globOptions: {
+                // 忽略文件
+                ignore: ["**/index.html"],
+                },
+                info: {
+                // 跳过terser压缩js
+                minimized: true,
+                },
+            },
+            ],
+      }),
     ],
-    optimization: {
+    //webpack解析模块加载选项
+    resolve: {
+        //自动补全文件扩展名
+        extensions: [".jsx", ".js", ".json"],
+    },
+    optimization:{
+        moduleIds: 'deterministic',  //解决文件内容不变，重复打包的问题
+        minimizer:false, 
         minimizer: [
             //优化和压缩 CSS只在生产模式下生效
-          new CssMinimizerPlugin(),
+            new CssMinimizerPlugin(),
+            //开启多进程以及压缩js
+            new TerserPlugin({
+                parallel:true,
+            })
         ],
-        minimize:true    //在开发模式下生效
-    },
-    //开发服务器:不会输出资源，在内存中编译打包的
-    devServer:{
-      host:"localhost",
-      port:'3030',
-      open:true,
-      hot:false,  //开启HMR
-    },
+        splitChunks:{
+            chunks:'all'
+        },
 
-   // mode 模式 ：development,production
-   mode:"development"
+    },
+    mode:'development',
+     //开发服务器:不会输出资源，在内存中编译打包的
+    devServer:{
+        host:"localhost",
+        port:'3030',
+        open:false,
+        hot:true,  //开启HMR
+        historyApiFallback: true, //解决前端路由404的问题
+    },
+    //打包文件和源文件作映射，方便定位问题
+    devtool:'source-map'
 }

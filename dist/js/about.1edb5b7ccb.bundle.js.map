@@ -1,0 +1,1 @@
+{"version":3,"file":"js/about.1edb5b7ccb.bundle.js","mappings":";;;;;;;;;;;;;;;AAAyB;AAEV,SAASC,KAAK,GAAE;EAC3B,oBAAO,gFAAgB;AAC3B","sources":["webpack://cherry-webpack/./src/pages/about/about.jsx"],"sourcesContent":["import React from 'react'\n\nexport default function About(){\n    return <div>about</div>\n}"],"names":["React","About"],"sourceRoot":""}
