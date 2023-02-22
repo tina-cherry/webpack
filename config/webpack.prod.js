@@ -1,9 +1,9 @@
 let path = require("path")
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");  //抽离 css样式
 const ESLintPlugin = require('eslint-webpack-plugin')
 const TerserPlugin = require("terser-webpack-plugin");
-const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");  //压缩css 
 const CopyPlugin = require("copy-webpack-plugin");
 const getStyleFn=(pre)=>{
     return [
